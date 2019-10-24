@@ -117,7 +117,7 @@ def main():
             # InfluxDBにデータを書き込む要求を投げる
             client.write_points(body, database='test')
             # メール送信のテストするため、100万以上の値段を設定する
-            best_ask = 1000000 
+            # best_ask = 1000000 
             # 希望金額が最低希望値以下はメールを送信する
             if best_bid <= best_bid_hope:
               if notice_flg == 0:
