@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# インポート
 import time
+import requests
+
 from email.mime.text import MIMEText
 from smtplib import SMTP_SSL as SMTP
-
-# インポート
-import requests
 from influxdb import InfluxDBClient
 
 # 定数定義
