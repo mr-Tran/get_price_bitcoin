@@ -162,7 +162,7 @@ def insertData(price):
 # メインメソッド
 def main():
     try:
-        # メール通知ステータスを初期化する。送信しない設定。
+        # メール通知ステータスを初期設定。送信しない設定。
         before_passing_status = 0
 
         # 永遠に価格を取得するため、繰り返しWhileを使う
