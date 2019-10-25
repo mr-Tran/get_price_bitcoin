@@ -138,18 +138,25 @@ def insertData(price):
         # InfluxDBに接続するために必要な情報を保持する
         client = InfluxDBClient(host, port)
 
+        # Grafanaで表示するため、QuoineとCOincheckの金額を小数点以下を捨てて丸めする
+        qo_best_bid = round(float(price[2]),0)
+        qo_best_ask = round(float(price[3]),0)
+        cc_best_bid = round(float(price[6]),0)
+        cc_best_ask = round(float(price[7]),0)
+
+
         # DBに登録する情報を作成する
         body = [{
             'measurement': 'bitcoin_price',
             'fields': {
                 'bf_best_bid': price[0],
                 'bf_best_ask': price[1],
-                'qo_best_bid': price[2],
-                'qo_best_ask': price[3],
+                'qo_best_bid': qo_best_bid,
+                'qo_best_ask': qo_best_ask,
                 'zf_best_bid': price[4],
                 'zf_best_ask': price[5],
-                'cc_best_bid': price[6],
-                'cc_best_ask': price[7]
+                'cc_best_bid': cc_best_bid,
+                'cc_best_ask': cc_best_ask
             }
         }]
         # InfluxDBにデータを書き込む要求を投げる
