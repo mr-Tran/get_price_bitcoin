@@ -9,9 +9,6 @@ import requests
 from influxdb import InfluxDBClient
 
 # 定数定義
-# bitflyer_API_url = 'https://api.bitflyer.com/v1/ticker/'  # bitFlyerのAPI Url
-# coincheck_API_url = 'https://coincheck.com/api/ticker/' # coincheckのAPI url
-# binance_API_url = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT' # binanceのAPI url
 host = "localhost"  # ホスト
 port = 8086  # ポート番号
 sleep_time = 60  # 値段を再取得間隔（秒）
@@ -25,10 +22,8 @@ receivers = ['gyomutestsample@gmail.com']  # 受信側メールアドレス
 username = "Mr.Sample"  # ユーザー名
 bitflyer_site_url = "https://bitflyer.com/ja-jp/"  # bitFlyerサイトのurl\
 text_subtype = 'plain'  # テキストタイプ
-subject = "【緊急】ビットコイン値段は希望金額範囲以外"  # 件名
+subject = "【緊急・重要】ビットコイン値段は希望金額範囲以外"  # 件名
 # コンテンツ（メール内容）
-# content1 = open('content1.txt').read() # 最低で購入希望より下時のお知らせメール内容
-# content2 = open('content2.txt').read() # 最大で販売希望より下時のお知らせメール内容
 content = username + """　様
 
 いつもbitFlyerをご利用いただき、誠にありがとうございます。
@@ -52,24 +47,27 @@ content = username + """　様
 """
 
 
-# 最大で販売希望より下時にメールを送信するメソッド
+# メールを送信するメソッド
 def sendmail():
     try:
         # メッセージを作成する
         msg = MIMEText(content, text_subtype)
+
         # 件名を設定
         msg['Subject'] = subject
+
         # 送信元を設定
         msg['From'] = sender
+
         # SMTPに接続
         conn = SMTP(SMTP_Host)
-        # conn.set_debuglevel(False)
+
         # 送信側のメールアドレスでログインする
         conn.login(sender, password)
         try:
             # 正常の場合はメールを送信する
             conn.sendmail(sender, receivers, msg.as_string())
-            # print("メールを正常に送信できました。")
+            
         finally:
             # 終了時に常に行う処理
             conn.quit()
@@ -78,13 +76,12 @@ def sendmail():
         print(e)
 
 
-# メールを通知判定メソッド
-def judgmentSend(notice_status):
+# メールを通知判定・送信実施のメソッド
+def judgmentSend(notice_status, price):
     try:
-        # 比較するため、ビットコイン値段を取得するメソッドを呼び出す
-        price = getPrice()
+        # bitflyerのビットコイン値段でメール通知の判定・送信処理
+        # 希望金額が最低希望値以下の場合はステータスの値が「1」にして、メールを送信する
         if price[0] <= best_bid_hope:
-            # 希望金額が最低希望値以下の場合はステータスの値が「1」にして、メールを送信する
             if notice_status != 1:
                 notice_status = 1
                 sendmail()
@@ -96,7 +93,6 @@ def judgmentSend(notice_status):
         # 上記以外の場合はメールをステータスの値が「0」のまま、メールを送信しない
         else:
             notice_status = 0
-        status = notice_status
         return notice_status
     except Exception as e:
         print(e)
@@ -104,8 +100,8 @@ def judgmentSend(notice_status):
 
 # 各取引所のビットコイン値段を取得するメソッド
 def getPrice():
-	# 定数定義
-	# APIのurl
+    # 定数定義
+    # APIのurl
     api_url = {'bitFlyer': 'https://api.bitflyer.jp/v1/getboard?product_code=BTC_JPY',
                'Quoine': 'https://api.quoine.com/products/5/price_levels',
                'Zaif': 'https://api.zaif.jp/api/1/depth/btc_jpy',
@@ -130,7 +126,35 @@ def getPrice():
         # 設定したデータをリストに詰める
         price_result_list = [bf_best_bid, bf_best_ask, qo_best_bid, qo_best_ask, zf_best_bid, zf_best_ask, cc_best_bid,
                              cc_best_ask]
+
         return price_result_list
+    except Exception as e:
+        print(e)
+
+
+# データベースにデータを登録するメソッド
+def insertData(price):
+    try:
+        # InfluxDBに接続するために必要な情報を保持する
+        client = InfluxDBClient(host, port)
+
+        # DBに登録する情報を作成する
+        body = [{
+            'measurement': 'bitcoin_price',
+            'fields': {
+                'bf_best_bid': price[0],
+                'bf_best_ask': price[1],
+                'qo_best_bid': price[2],
+                'qo_best_ask': price[3],
+                'zf_best_bid': price[4],
+                'zf_best_ask': price[5],
+                'cc_best_bid': price[6],
+                'cc_best_ask': price[7]
+            }
+        }]
+        # InfluxDBにデータを書き込む要求を投げる
+        client.write_points(body, database='test')
+
     except Exception as e:
         print(e)
 
@@ -138,38 +162,20 @@ def getPrice():
 # メインメソッド
 def main():
     try:
-        # 永遠に価格を取得するため、繰り返しWhileを使う
+        # メール通知ステータスを初期化する。送信しない設定。
         before_passing_status = 0
-        i = 0
+
+        # 永遠に価格を取得するため、繰り返しWhileを使う
         while True:
             # ビットコイン値段を取得メソッドを呼び出す
             price = getPrice()
 
-            # InfluxDBに接続するために必要な情報を保持する
-            client = InfluxDBClient(host, port)
+            # getPrice()で取得したデータをデータベースに登録する
+            insertData(price)
 
-            # DBに登録する情報を作成する
-            body = [{
-                'measurement': 'bitcoin_price',
-                'fields': {
-                    'bf_best_bid': price[0],
-                    'bf_best_ask': price[1],
-                    'qo_best_bid': price[2],
-                    'qo_best_ask': price[3],
-                    'zf_best_bid': price[4],
-                    'zf_best_ask': price[5],
-                    'cc_best_bid': price[6],
-                    'cc_best_ask': price[7]
-                }
-            }]
-
-            # InfluxDBにデータを書き込む要求を投げる
-            client.write_points(body, database='bitcoin_price_DB')
-
-            # 判定メソッドのステータスを設定する。初期値は「0」メールを送信しない設定。
+            # メールの通知判定・送信実施のメソッドを呼び出す
             # 通知のステータスをresult_statusに代入する
-            result_status = judgmentSend(before_passing_status)
-            
+            result_status = judgmentSend(before_passing_status, price)
             # 変更がある時に通知のステータスがresult_statusの値を設定する。
             # 毎回、ビットコイン値段を取得する度に範囲以外の金額であれば、通知するを防ぐ、希望金額範囲以外の初回のみメールを送信する。
             before_passing_status = result_status
