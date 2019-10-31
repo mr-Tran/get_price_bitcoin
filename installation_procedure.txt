@@ -1,0 +1,85 @@
+● ''InfluxDBインストール'' 
+ '''参考''' ：https://qiita.com/fjtter/items/ea36b063568aa3b75782
+
+①　下記URLから、Windows用のInfluxDBをダウンロードする
+　　https://portal.influxdata.com/downloads
+　　作成時点：https://dl.influxdata.com/influxdb/releases/influxdb-1.7.8_windows_amd64.zip
+②　ダウンロードしたzipファイルをCドライバー直下に解凍する
+　　PATH：C:\influxdb
+③　データ用のディレクトリを作成する
+　　コマンドプロンプトで：mkdir C:\influxdb\meta
+　　　　　　　　　　　　　mkdir C:\influxdb\data
+　　　　　　　　　　　　　mkdir C:\influxdb\wal
+④　設定ファイルを修正する。※influxdb.conf（(C:\influxdb\）をエディタツール（サクラエディタなど）で開き、中身を修正
+　　[meta]
+　　# Where the metadata/raft database is stored
+　　# dir = "/var/lib/influxdb/meta"　　　　　※デフォルトのものをbackupのため、コメントアウトする
+　　dir = "C:\\influxdb\\meta"　　　　　　　  ※新しい設定を追加
+　　
+　　[data]
+　　# The directory where the TSM storage engine stores TSM files.
+　　# dir = "/var/lib/influxdb/data"
+　　dir = "C:\\influxdb\\data"
+
+　　# The directory where the TSM storage engine stores WAL files.
+　　# wal-dir = "/var/lib/influxdb/wal"
+　　wal-dir = "C:\\influxdb\\wal"
+
+⑤　起動する
+　　コマンドプロンプトで：cd c:\influxdb　　　　　　　　※作業場所を移動する
+　　　　　　　　　　　　　influxd
+
+⑥　InfluxDBの動作確認
+　　powershellを起動して、InfluxDBにデータベースtestを作るクエリを送信する。
+　　curl "http://localhost:8086/query?q=CREATE DATABASE test"
+
+
+
+
+
+ ●''Telegrafのインストール'' 
+①　下記のリンクからWindows用のTelegrafをダウンロード
+　　　https://portal.influxdata.com/downloads
+②　ダウンロードしたzipファイルをCドライバー直下に解凍する
+③　起動する
+　　influxdbを起動したコマンドプロンプトと別のコマンドプロンプトで下記のコマンドを入力
+　　　　cd c:\telegraf　　　　　　　　※作業場所を移動する
+　　　　telegraf
+
+
+
+
+●''Grafanaのインストール'' 
+ ①　下記のリンクからWindows用のGrafana(zipファイル)をダウンロード
+ 　　https://grafana.com/grafana/download?platform=windows
+ ②　ダウンロードしたzipファイルをCドライバー直下に解凍する
+ ③　設定ファイルをコピーし、ディレクトリを用意します。
+ 　　コマンドプロンプトで下記のコマンドを入力
+ 　　copy C:\grafana\conf\sample.ini C:\grafana\conf\custom.ini
+ 　　mkdir C:\grafana\data\log
+ 　　mkdir C:\grafana\data\plugins
+ ④　設定ファイルC:\grafana\conf\custom.iniを編集します。
+　　[paths]
+    # Path to where grafana can store temp files, sessions, and the sqlite3 db (if that is used)
+    # ;data = /var/lib/grafana
+    ;data = C:\\grafana\\data
+
+    # Temporary files in `data` directory older than given duration will be removed
+    ;temp_data_lifetime = 24h
+
+    # Directory where grafana can store logs
+    # ;logs = /var/log/grafana
+    ;logs = C:\\grafana\\data\\log
+
+    # Directory where grafana will automatically scan and look for plugins
+    # ;plugins = /var/lib/grafana/plugins
+    ;plugins = C:\\grafana\\data\\plugins
+
+    # folder that contains provisioning config files that grafana will apply on startup and while running.
+    ;provisioning = conf/provisioning
+⑤　起動する
+　　influxdbとtelegrafを起動したコマンドプロンプトと別のコマンドプロンプトで下記のコマンドを入力
+　　cd C:\grafana\bin　　　　　　　　　　　※作業場所を移動する
+　　grafana-server
+
+これでインストール完了。
